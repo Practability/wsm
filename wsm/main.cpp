@@ -33,6 +33,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
+// Helper function to get read-only resource string
+LPCWSTR LoadString(HINSTANCE hInstance, UINT uID)
+{
+    LPWSTR buffer = 0;
+    LoadString(hInstance, uID, (LPWSTR)&buffer, 0);
+    return buffer;
+}
+
 void CreateMainWindow()
 {
     WNDCLASSEX wcx;
@@ -52,8 +60,7 @@ void CreateMainWindow()
     if (!RegisterClassEx(&wcx))
         return;
 
-    WCHAR buffer[1024];
-    LoadString(instance, IDS_APPNAME, buffer, 1024);
+    LPCWSTR buffer = LoadString(instance, IDS_APPNAME);
     HWND mainWindow = CreateWindow(L"WSMMainWindow", buffer, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
         NULL, NULL, instance, NULL);
