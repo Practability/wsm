@@ -19,15 +19,47 @@ BOOL CheckInstanceRunning()
     return FALSE;
 }
 
+BOOL AddTaskbarIcon(HWND hwnd)
+{
+    NOTIFYICONDATA tnid = {};
+    tnid.cbSize = sizeof(tnid);
+    tnid.hWnd = hwnd;
+    tnid.uID = IDI_APPICON;
+    tnid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE);
+    tnid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
+    tnid.szTip[0] = '\0';
+    return Shell_NotifyIcon(NIM_ADD, &tnid);
+}
+
+BOOL DeleteTaskbarIcon(HWND hwnd)
+{
+    NOTIFYICONDATA tnid = {};
+    tnid.cbSize = sizeof(tnid);
+    tnid.hWnd = hwnd;
+    tnid.uID = IDI_APPICON;
+    return Shell_NotifyIcon(NIM_DELETE, &tnid);
+}
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
+    static UINT taskbarCreatedMessage = WM_NULL;
+
+    switch (uMsg) {
+    case WM_CREATE:
+        RegisterWindowMessage(L"TaskbarCreated");
+        AddTaskbarIcon(hwnd);
+        break;
     case WM_DESTROY:
+        DeleteTaskbarIcon(hwnd);
         PostQuitMessage(WM_QUIT);
         break;
     default:
-        return DefWindowProc(hwnd, uMsg, wParam, lParam);
+        if (taskbarCreatedMessage != WM_NULL && uMsg == taskbarCreatedMessage) {
+            AddTaskbarIcon(hwnd);
+        } else {
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
+        }
         break;
     }
     return 0;
@@ -103,6 +135,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
     }
 
-    // Return the exit code to the system.
+    // Return with exit code.
     return (int)msg.wParam;
 }
