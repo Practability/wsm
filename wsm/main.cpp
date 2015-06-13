@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 
+#define WM_TRAY_NOTIFY WM_USER
+
 HINSTANCE instance;
 
 BOOL CheckInstanceRunning()
@@ -26,8 +28,8 @@ BOOL AddTaskbarIcon(HWND hwnd)
     tnid.hWnd = hwnd;
     tnid.uID = IDI_APPICON;
     tnid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
-    HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hwnd, GWL_HINSTANCE);
-    tnid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPICON));
+    tnid.uCallbackMessage = WM_TRAY_NOTIFY;
+    tnid.hIcon = LoadIcon(instance, MAKEINTRESOURCE(IDI_APPICON));
     tnid.szTip[0] = '\0';
     return Shell_NotifyIcon(NIM_ADD, &tnid);
 }
@@ -39,6 +41,22 @@ BOOL DeleteTaskbarIcon(HWND hwnd)
     tnid.hWnd = hwnd;
     tnid.uID = IDI_APPICON;
     return Shell_NotifyIcon(NIM_DELETE, &tnid);
+}
+
+LRESULT TaskbarProc(WPARAM wParam, LPARAM lParam)
+{
+    switch (lParam)
+    {
+    case WM_LBUTTONDOWN:
+        OutputDebugString(L"Clicked!\r\n");
+        break;
+    case WM_RBUTTONDOWN:
+        OutputDebugString(L"Right Clicked!\r\n");
+        break;
+    default:
+        break;
+    }
+    return 0;
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -54,6 +72,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         DeleteTaskbarIcon(hwnd);
         PostQuitMessage(WM_QUIT);
         break;
+    case WM_TRAY_NOTIFY:
+        return TaskbarProc(wParam, lParam);
+        break;
     default:
         if (taskbarCreatedMessage != WM_NULL && uMsg == taskbarCreatedMessage) {
             AddTaskbarIcon(hwnd);
@@ -65,7 +86,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// Helper function to get read-only resource string
+/*
+ Helper function to get read-only resource string
+ */
 LPCWSTR LoadString(HINSTANCE hInstance, UINT uID)
 {
     LPWSTR buffer = 0;
